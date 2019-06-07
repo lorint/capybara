@@ -394,7 +394,7 @@ Capybara::SpecHelper.spec 'node' do
     end
   end
 
-  describe '#drag_to', requires: %i[js drag] do
+  describe '#drag_to', :focus_, requires: %i[js drag] do
     it 'should drag and drop an object' do
       @session.visit('/with_js')
       element = @session.find('//div[@id="drag"]')
@@ -419,11 +419,29 @@ Capybara::SpecHelper.spec 'node' do
       expect(@session).to have_xpath('//div[contains(., "Dropped!")]')
     end
 
-    context 'HTML5', requires: %i[js html5_drag] do
+    it 'should drag a link child' do
+      @session.visit('/with_js')
+      link = @session.find_link('drag_link')
+      target = @session.find(:id, 'drop')
+      link.drag_to target
+      expect(@session).to have_xpath('//div[contains(., "Dropped!")]')
+    end
+
+    context 'HTML5', :focus_, requires: %i[js html5_drag] do
       it 'should HTML5 drag and drop an object' do
         @session.visit('/with_js')
         element = @session.find('//div[@id="drag_html5"]')
         target = @session.find('//div[@id="drop_html5"]')
+        element.drag_to(target)
+        expect(@session).to have_xpath('//div[contains(., "HTML5 Dropped string: text/plain drag_html5")]')
+      end
+
+      it 'should HTML5 drag and drop an object', :focus_ do
+        @session.visit('/with_js')
+        element = @session.find('//div[@id="drag_html5"]/p')
+        target = @session.find('//div[@id="drop_html5"]')
+        # require 'byebug'
+        # byebug
         element.drag_to(target)
         expect(@session).to have_xpath('//div[contains(., "HTML5 Dropped string: text/plain drag_html5")]')
       end
@@ -459,6 +477,14 @@ Capybara::SpecHelper.spec 'node' do
         link = @session.find_link('drag_link_html5')
         target = @session.find(:id, 'drop_html5')
         link.drag_to target
+        expect(@session).to have_xpath('//div[contains(., "HTML5 Dropped")]')
+      end
+
+      it 'should drag HTML5 default draggable element child' do
+        @session.visit('/with_js')
+        source = @session.find_link('drag_link_html5').find(:css, 'p')
+        target = @session.find(:id, 'drop_html5')
+        source.drag_to target
         expect(@session).to have_xpath('//div[contains(., "HTML5 Dropped")]')
       end
     end

@@ -18,8 +18,16 @@ class Capybara::Selenium::Node
     end
 
     def html5_draggable?
+      driver.execute_script <<~JS, self
+        var el = arguments[0]
+        while(el){
+          if (el.draggable) return true;
+          el = el.parentElement;
+        }
+        return false;
+      JS
       # Workaround https://github.com/SeleniumHQ/selenium/issues/6396
-      native.property('draggable')
+      # native.property('draggable')
     end
 
     def html5_drop(*args)
@@ -131,6 +139,10 @@ class Capybara::Selenium::Node
       	}
 
         return new DOMPoint(pt.x,pt.y);
+      }
+
+      while (!source.draggable){
+        source = source.parentElement;
       }
 
       var dt = new DataTransfer();
