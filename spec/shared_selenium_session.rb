@@ -305,6 +305,19 @@ RSpec.shared_examples 'Capybara::Session' do |session, mode|
       end
     end
 
+    describe 'Element#drag_to' do
+      it 'should work with SortableJS' do
+        pending "We can't emulate HTML5 DND on Safari" if safari?(session)
+        session.visit('/with_js')
+        session.within(:css, '#sortable') do
+          src = session.find('div', text: 'Item 1')
+          target = session.find('div', text: 'Item 3')
+          src.drag_to target
+          expect(session).to have_content(/Item 3.*Item 1/, normalize_ws: true)
+        end
+      end
+    end
+
     describe 'Capybara#Node#attach_file' do
       it 'can attach a directory' do
         pending "Geckodriver doesn't support uploading a directory" if firefox?(session)

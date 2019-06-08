@@ -2,25 +2,22 @@
 
 class Capybara::Selenium::Node
   module Html5Drag
-  # Implement methods to emulate HTML5 drag and drop
+    # Implement methods to emulate HTML5 drag and drop
 
-  private
-
-    def html5_drag_to(element)
+    def drag_to(element)
       driver.execute_script MOUSEDOWN_TRACKER
       scroll_if_needed { browser_action.click_and_hold(native).perform }
-      if driver.evaluate_script('window.capybara_mousedown_prevented')
+      if driver.evaluate_script('window.capybara_mousedown_prevented || !arguments[0].draggable', self)
         element.scroll_if_needed { browser_action.move_to(element.native).release.perform }
       else
+        # Split dragging and dropping because some libraries (SortableJS) execute code via setTimeout
+        driver.execute_script START_DRAG_SCRIPT, self
         driver.execute_script HTML5_DRAG_DROP_SCRIPT, self, element
         browser_action.release.perform
       end
     end
 
-    def html5_draggable?
-      # Workaround https://github.com/SeleniumHQ/selenium/issues/6396
-      native.property('draggable')
-    end
+  private
 
     def html5_drop(*args)
       if args[0].is_a? String
@@ -91,6 +88,24 @@ class Capybara::Selenium::Node
       }, { once: true, passive: true })
     JS
 
+    START_DRAG_SCRIPT = <<~JS
+      var source = arguments[0];
+      var dt = new DataTransfer();
+      window.capybara_drag_opts = { cancelable: true, bubbles: true, dataTransfer: dt };
+
+      if (source.tagName == 'A'){
+        dt.setData('text/uri-list', source.href);
+        dt.setData('text', source.href);
+      }
+      if (source.tagName == 'IMG'){
+        dt.setData('text/uri-list', source.src);
+        dt.setData('text', source.src);
+      }
+
+      var dragEvent = new DragEvent('dragstart', window.capybara_drag_opts);
+      source.dispatchEvent(dragEvent);
+    JS
+
     HTML5_DRAG_DROP_SCRIPT = <<~JS
       var source = arguments[0];
       var target = arguments[1];
@@ -133,20 +148,8 @@ class Capybara::Selenium::Node
         return new DOMPoint(pt.x,pt.y);
       }
 
-      var dt = new DataTransfer();
-      var opts = { cancelable: true, bubbles: true, dataTransfer: dt };
+      var opts = window.capybara_drag_opts;
 
-      if (source.tagName == 'A'){
-        dt.setData('text/uri-list', source.href);
-        dt.setData('text', source.href);
-      }
-      if (source.tagName == 'IMG'){
-        dt.setData('text/uri-list', source.src);
-        dt.setData('text', source.src);
-      }
-
-      var dragEvent = new DragEvent('dragstart', opts);
-      source.dispatchEvent(dragEvent);
       target.scrollIntoView({behavior: 'instant', block: 'center', inline: 'center'});
       var targetRect = target.getBoundingClientRect();
       var sourceCenter = rectCenter(source.getBoundingClientRect());
