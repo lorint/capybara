@@ -131,7 +131,7 @@ class Capybara::Selenium::Driver < Capybara::Driver::Base
                 warn "localStorage clear requested but is not available for this driver"
               end
             end
-          rescue Selenium::WebDriver::Error::UnhandledError
+          rescue Selenium::WebDriver::Error::UnknownError # Used to be:  Selenium::WebDriver::Error::UnhandledError
             # delete_all_cookies fails when we've previously gone
             # to about:blank, so we rescue this error and do nothing
             # instead.
@@ -145,7 +145,7 @@ class Capybara::Selenium::Driver < Capybara::Driver::Base
           raise Capybara::ExpectationNotMet.new('Timed out waiting for Selenium session reset') if (Capybara::Helpers.monotonic_time - start_time) >= 10
           sleep 0.05
         end
-      rescue Selenium::WebDriver::Error::UnhandledAlertError, Selenium::WebDriver::Error::UnexpectedAlertOpenError
+      rescue Selenium::WebDriver::Error::UnexpectedAlertOpenError
         # This error is thrown if an unhandled alert is on the page
         # Firefox appears to automatically dismiss this alert, chrome does not
         # We'll try to accept it
@@ -265,13 +265,11 @@ class Capybara::Selenium::Driver < Capybara::Driver::Base
 
   def invalid_element_errors
     [::Selenium::WebDriver::Error::StaleElementReferenceError,
-     ::Selenium::WebDriver::Error::UnhandledError,
-     ::Selenium::WebDriver::Error::ElementNotVisibleError,
+     ::Selenium::WebDriver::Error::UnknownError, # Used to be:  Selenium::WebDriver::Error::UnhandledError
+     ::Selenium::WebDriver::Error::ElementNotInteractableError, # Used to be:  Selenium::WebDriver::Error::ElementNotVisibleError, Selenium::WebDriver::Error::InvalidElementStateError, Selenium::WebDriver::Error::ElementNotSelectableError
      ::Selenium::WebDriver::Error::InvalidSelectorError, # Work around a race condition that can occur with chromedriver and #go_back/#go_forward
      ::Selenium::WebDriver::Error::ElementNotInteractableError,
-     ::Selenium::WebDriver::Error::ElementClickInterceptedError,
-     ::Selenium::WebDriver::Error::InvalidElementStateError,
-     ::Selenium::WebDriver::Error::ElementNotSelectableError,
+     ::Selenium::WebDriver::Error::ElementClickInterceptedError
     ]
   end
 
